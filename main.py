@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 import os
@@ -19,11 +19,12 @@ if os.path.exists(MODEL_PATH):
 else:
     model = None
 
-# Описываем входные данные через Pydantic для валидации
+# Описываем входные данные через Pydantic для валидации.
+# Field задаёт границы: FastAPI сам вернёт ошибку 422, если значение вне диапазона
 class ApartmentFeatures(BaseModel):
-    area: float   # Площадь в кв.м
-    rooms: int    # Количество комнат
-    floor: int    # Этаж
+    area: float = Field(gt=0, le=1000, description="Площадь в кв.м")
+    rooms: int = Field(ge=1, le=20, description="Количество комнат")
+    floor: int = Field(ge=1, le=200, description="Этаж")
 
 @app.get("/")
 def home():
@@ -32,7 +33,8 @@ def home():
 @app.post("/predict")
 def predict_price(features: ApartmentFeatures):
     if model is None:
-        return {"error": "Модель не найдена. Сначала запустите train_model.py!"}
+        # 503 — «сервис пока недоступен»: модели нет, предсказывать нечем
+        raise HTTPException(status_code=503, detail="Модель не найдена. Сначала запустите python model/train_model.py")
     
     # Преобразуем входящие данные в DataFrame
     input_data = pd.DataFrame([{

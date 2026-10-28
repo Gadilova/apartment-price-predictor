@@ -1,26 +1,38 @@
+"""Обучение модели: читаем данные о квартирах, обучаем линейную регрессию и сохраняем её в файл.
+
+Запуск из корня проекта:
+    python model/train_model.py
+"""
+
 import os
+
+import joblib
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-import joblib
+
+DATA_PATH = "data/housing.csv"
+MODEL_PATH = "model/apartment_model.pkl"
+
+FEATURES = ["area", "rooms", "floor"]
+TARGET = "price"  # цена в тысячах долларов
 
 
-data = {
-    'area': [40, 55, 70, 85, 100, 45, 60, 80, 95, 110],
-    'rooms': [1, 2, 2, 3, 4, 1, 2, 3, 3, 4],
-    'floor': [3, 5, 2, 9, 4, 12, 7, 1, 5, 8],
-    'price': [60, 85, 105, 130, 160, 70, 90, 125, 140, 175]
-}
+def train():
+    df = pd.read_csv(DATA_PATH)
 
-df = pd.DataFrame(data)
+    X = df[FEATURES]
+    y = df[TARGET]
+
+    model = LinearRegression()
+    model.fit(X, y)
+
+    # R² показывает, насколько хорошо модель объясняет цены: 1.0 — идеально, 0 — никак
+    print(f"Обучено на {len(df)} квартирах, R² = {model.score(X, y):.3f}")
+
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    joblib.dump(model, MODEL_PATH)
+    print(f"Модель сохранена в {MODEL_PATH}")
 
 
-X = df[['area', 'rooms', 'floor']]
-y = df['price']
-
-model = LinearRegression()
-model.fit(X, y)
-
-os.makedirs('model', exist_ok=True)
-joblib.dump(model, 'model/apartment_model.pkl')
-
-print("Модель успешно обучена и сохранена в model/apartment_model.pkl!")
+if __name__ == "__main__":
+    train()
